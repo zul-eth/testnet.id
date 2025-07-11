@@ -45,7 +45,7 @@ export default function Step1_ExchangeForm({ data, onChange, onNext }: Props) {
           />
         </div>
         <p className="mt-1 text-xs text-gray-400">
-            {[supportedStableCoins, ...supportedCoins].find(c => c.value === data.currency)?.label}
+            {[...supportedStableCoins, ...supportedCoins].find(c => c.value === data.currency)?.label}
         </p>
       </div>
       
