@@ -3,7 +3,7 @@
 import { HiOutlineInformationCircle } from 'react-icons/hi'
 import { FormState } from '@/types/form'
 import CurrencyDropdown from '@/components/shared/CurrencyDropdown'
-
+import { supportedStableCoins, supportedCoins } from '@/utils/currencies'
 type Props = {
   data: FormState
   onChange: (form: FormState) => void
@@ -45,9 +45,11 @@ export default function Step1_ExchangeForm({ data, onChange, onNext }: Props) {
           />
         </div>
         <p className="mt-1 text-xs text-gray-400">
-          {data.currency === 'USD' ? 'US Dollar' : ''}
+            {[supportedStableCoins, ...supportedCoins].find(c => c.value === data.currency)?.label}
         </p>
       </div>
+      
+      
 
       {/* You Get */}
       <div className="mb-4 p-4 rounded-2xl border border-gray-200 bg-gray-50 shadow-sm">
