@@ -1,0 +1,11 @@
+/* src/styles/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional: tambahan styling global */
+html,
+body {
+  @apply bg-white text-gray-900;
+  font-family: sans-serif;
+}

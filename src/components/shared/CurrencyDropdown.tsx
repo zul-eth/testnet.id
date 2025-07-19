@@ -2,40 +2,45 @@
 
 import Image from 'next/image'
 import { GoChevronDown } from 'react-icons/go'
-import { CurrencyCode } from '@/types/form'
-import { supportedCoins, supportedStableCoins } from '@/utils/currencies'
+
+type CurrencyItem = {
+  label: string
+  name: string
+  icon: string // path URL dari /public/crypto atau full URL
+}
 
 type Props = {
-  value: CurrencyCode
-  onChange: (val: CurrencyCode) => void
-  type: 'coin' | 'stable'
+  value: string
+  onChange: (val: string) => void
+  items: CurrencyItem[]          // Ganti dari tipe statis ke dinamis
   noBox?: boolean
 }
 
-export default function CurrencyDropdown({ value, onChange, type, noBox }: Props) {
-  const options = type === 'stable' ? supportedStableCoins : supportedCoins
-  const selected = options.find((opt) => opt.value === value)
+export default function CurrencyDropdown({ value, onChange, items, noBox }: Props) {
+  const selected = items.find((opt) => opt.name === value || opt.label === value)
 
   return (
     <div className="w-fit">
       <div className="relative flex items-center">
-        <Image
-          src={`/crypto/${value.toLowerCase()}.png`}
-          alt={value}
-          width={24}
-          height={24}
-          className="mr-2"
-        />
+        {selected?.icon && (
+          <Image
+            src={selected.icon}
+            alt={selected.name}
+            width={24}
+            height={24}
+            className="mr-2"
+          />
+        )}
         <select
           value={value}
-          onChange={(e) => onChange(e.target.value as CurrencyCode)}
+          onChange={(e) => onChange(e.target.value)}
           className={`appearance-none bg-transparent text-base font-semibold text-gray-800 pr-6 ${
             noBox ? 'border-none outline-none focus:ring-0' : 'border border-gray-300 rounded-lg py-2 px-3'
           }`}
         >
-          {options.map((currency) => (
-            <option key={currency.value} value={currency.value}>
-              {currency.value}
+          {items.map((currency) => (
+            <option key={currency.name} value={currency.name}>
+              {currency.name}
             </option>
           ))}
         </select>

@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Network {
+  MAINNET
+  TESTNET
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  EXPIRED
+  FAILED
+}
+
+model Coin {
+  id        String   @id @default(uuid())
+  network   Network  @default(TESTNET) // ✅ DITAMBAHKAN
+  name      String
+  symbol    String   @unique
+  iconUrl   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relasi
+  basePairs  Pair[] @relation("BaseCoin")
+  quotePairs Pair[] @relation("QuoteCoin")
+}
+
+model Pair {
+  id           String   @id @default(uuid())
+  network      Network  @default(TESTNET)
+  baseCoin     Coin     @relation("BaseCoin", fields: [baseCoinId], references: [id])
+  baseCoinId   String
+  quoteCoin    Coin     @relation("QuoteCoin", fields: [quoteCoinId], references: [id])
+  quoteCoinId  String
+  priceBase    Float
+  priceQuote   Float
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relasi
+  orders Order[]
+}
+
+model Order {
+  id                 String      @id @default(uuid())
+  network            Network     @default(TESTNET)
+  orderHash          String      @unique
+  pair               Pair        @relation(fields: [pairId], references: [id])
+  pairId             String
+  amount             Float
+  addressDestination String
+  status             OrderStatus @default(PENDING)
+  expiresAt          DateTime
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  // Relasi
+  history OrderHistory?
+}
+
+model OrderHistory {
+  id          String   @id @default(uuid())
+  network     Network  @default(TESTNET)
+  order       Order    @relation(fields: [orderId], references: [id])
+  orderId     String   @unique
+  txHash      String   @unique
+  confirmedAt DateTime
+}

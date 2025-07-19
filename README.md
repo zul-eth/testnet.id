@@ -38,3 +38,84 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 =======
 # testnet.id
 >>>>>>> 4ae70c0a8e23f009ed61c1d5f16d790ff73b1aab
+
+#masuk
+- sudo -u postgres psql
+-- 1. Buat database
+CREATE DATABASE testnet_id;
+
+-- 2. Buat user dengan password
+CREATE USER testnet_user WITH PASSWORD '123456';
+
+-- 3. Berikan hak akses penuh ke user terhadap database
+GRANT ALL PRIVILEGES ON DATABASE testnet_id TO testnet_user;
+
+# STRUKTUR PROJECT
+> Client: 
+• memilih pair (usdt/eth) dll pada testnet maupun mainnet
+• melihat estimasi pada setiap nominal dan pasangan tiap pair yg berlaku
+• melihat detail transaksi (jumlah coin dan price pada saat pesanan)
+• proses transaksi manual (copy alamat penerima) atau gunakan wallet connect dll
+> Admin:
+• create/delete/edit coin mainnet/testnet
+• create/delete/edit pair + price mainnet/testnet
+• cek histroy (pesanan yg berhasil) mainnet/testnet
+
+# tegnology
+- nextjs 13.4
+- postgresql + schema prisma (metode api= server action + route api)
+- talwind
+
+project-root/
+├── prisma/
+│   └── schema.prisma
+│
+├── public/
+│   └── uploads/                   # Folder icon hasil upload
+│
+├── styles/
+│   └── globals.css
+│
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── coins/
+│   │   │   │   ├── route.ts       # GET coins, POST create coin
+│   │   │   │   ├── [id]/route.ts  # PUT edit coin
+│   │   │   │   └── upload/        # Upload icon endpoint
+│   │   │   │       └── route.ts   # POST file upload
+│   │   │   │
+│   │   │   ├── pairs/
+│   │   │   │   ├── route.ts       # GET pairs, POST create pair
+│   │   │   │   └── [id]/route.ts  # PUT edit pair
+│   │   │   │
+│   │   │   └── orders/
+│   │   │       └── route.ts       # POST new order (from client)
+│   │   │
+│   │   ├── admin/
+│   │   │   ├── page.tsx           # Dashboard summary (optional) 
+│   │   │   ├── layout.tsx         # Admin layout 
+│   │   │   ├── coins/
+│   │   │   │   ├── page.tsx      # Admin UI: list/add/edit Coin
+│   │   │   ├── pairs/
+│   │   │   │   ├── page.tsx      # Admin UI: list/add/edit Pair
+│   │   │   ├── history/
+│   │   │   │   ├── page.tsx    # Admin UI: view completed Orders
+│   │   │   └── actions.ts         # (Optional) all server actions in 1 file 
+│   │   │
+│   │   ├── page.tsx               # Public landing
+│   │   ├── pairs.tsx              # Client UI: list/estimate pair
+│   │   ├── order.tsx              # Client UI: order detail
+│   │   └── layout.tsx             # App wrapper & import global CSS
+│   │
+│   ├── lib/
+│   │   ├── prisma.ts              # Prisma client
+│   │   └── auth.ts                # Role check utilities
+│   │
+│   └── types/
+│       └── index.d.ts             # (Optional) custom types
+│
+├── middleware.ts
+├── .env
+├── package.json
+└── tsconfig.json

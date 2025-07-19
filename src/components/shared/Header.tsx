@@ -1,10 +1,13 @@
 'use client'
+
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
+import { useNetwork } from '@/context/NetworkContext' // ✅ Pastikan ini dari context
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
+  const { network, setNetwork } = useNetwork() // ✅ Pakai object destructuring, bukan array!
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : ''
@@ -13,20 +16,44 @@ const Header = () => {
   return (
     <>
       <header className="w-full border-b bg-white px-4 py-3 flex justify-between items-center sticky top-0 z-50">
-        <Link href="/" className="text-2xl font-bold text-blue-600">testnet.id</Link>
-        <nav className="hidden md:flex space-x-6 text-gray-700 text-sm font-medium">
+        {/* Logo */}
+        <Link href="/" className="text-2xl font-bold text-blue-600">
+          testnet.id
+        </Link>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex space-x-6 text-gray-700 text-sm font-medium items-center">
           <Link href="#">Exchange</Link>
           <Link href="#">Buy</Link>
           <Link href="#">Sell</Link>
           <Link href="#">DeFi</Link>
+
+          {/* Network Dropdown (Desktop) */}
+          <select
+            value={network}
+            onChange={(e) => setNetwork(e.target.value as 'mainnet' | 'testnet')}
+            className="ml-4 text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700"
+          >
+            <option value="mainnet">Mainnet</option>
+            <option value="testnet">Testnet</option>
+          </select>
         </nav>
-        <button
-          className="md:hidden"
-          onClick={() => setIsOpen(true)}
-          aria-label="Open Menu"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
+
+        {/* Mobile Navigation: Dropdown + Menu */}
+        <div className="md:hidden flex items-center gap-2">
+          <select
+            value={network}
+            onChange={(e) => setNetwork(e.target.value as 'mainnet' | 'testnet')}
+            className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700"
+          >
+            <option value="mainnet">Mainnet</option>
+            <option value="testnet">Testnet</option>
+          </select>
+
+          <button onClick={() => setIsOpen(true)} aria-label="Open Menu">
+            <Menu className="w-6 h-6" />
+          </button>
+        </div>
       </header>
 
       {/* Overlay */}
@@ -49,6 +76,8 @@ const Header = () => {
             <X className="w-6 h-6" />
           </button>
         </div>
+
+        {/* Mobile Menu Links */}
         <nav className="flex flex-col px-6 py-4 space-y-5 text-gray-800 text-base font-medium">
           <Link href="#" onClick={() => setIsOpen(false)}>Personal</Link>
           <Link href="#" onClick={() => setIsOpen(false)}>Business</Link>
@@ -56,6 +85,19 @@ const Header = () => {
           <Link href="#" onClick={() => setIsOpen(false)}>Support</Link>
           <Link href="#" onClick={() => setIsOpen(false)}>FAQ</Link>
           <Link href="#" onClick={() => setIsOpen(false)}>Language: English (International)</Link>
+
+          {/* Network Selector (Mobile) */}
+          <div className="pt-2">
+            <span className="text-xs text-gray-500 mb-1 block">Network</span>
+            <select
+              value={network}
+              onChange={(e) => setNetwork(e.target.value as 'mainnet' | 'testnet')}
+              className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 w-full"
+            >
+              <option value="mainnet">Mainnet</option>
+              <option value="testnet">Testnet</option>
+            </select>
+          </div>
         </nav>
       </div>
     </>

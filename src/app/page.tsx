@@ -1,66 +1,23 @@
 'use client'
 
-import { useState } from 'react'
-import Step1_ExchangeForm from '@/components/steps/Step1_ExchangeForm'
-import Step2_AddressForm from '@/components/steps/Step2_AddressForm'
-import Step3_TransactionStatus from '@/components/steps/Step3_TransactionStatus'
-import type { FormState } from '@/types/form'
-import { getRate } from '@/utils/rates'
-import { v4 as uuidv4 } from 'uuid'
+import Link from 'next/link'
 
-const initialForm: FormState = {
-  amount: '',
-  currency: 'USDT',
-  receiveCurrency: 'ETH',
-  receiveAmount: '',
-  address: '',
-  txId: '',
-}
-
-export default function Page() {
-  const [form, setForm] = useState<FormState>(initialForm)
-  const [step, setStep] = useState(1)
-
-  const handleChange = (updated: FormState) => {
-    const amountNum = parseFloat(updated.amount)
-    const rate = getRate(updated.currency, updated.receiveCurrency)
-    const estimated = !isNaN(amountNum) && rate
-      ? (amountNum * rate).toFixed(6)
-      : ''
-    setForm({ ...updated, receiveAmount: estimated })
-  }
-
-  const handleNext = () => {
-    if (step === 2) {
-      // Generate txId ketika masuk ke Step 3
-      const txId = uuidv4()
-      setForm((prev) => ({ ...prev, txId }))
-    }
-    setStep((s) => s + 1)
-  }
-
-  const handleBack = () => {
-    setStep((s) => s - 1)
-  }
-
+export default function HomePage() {
   return (
-    <main className="min-h-screen bg-gray-50">
-      {step === 1 && (
-        <Step1_ExchangeForm
-          data={form}
-          onChange={handleChange}
-          onNext={handleNext}
-        />
-      )}
-      {step === 2 && (
-        <Step2_AddressForm
-          data={form}
-          onChange={setForm}
-          onNext={handleNext}
-          onBack={handleBack}
-        />
-      )}
-      {step === 3 && <Step3_TransactionStatus data={form} />}
+    <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="text-center max-w-md">
+        <h1 className="text-3xl font-bold text-blue-600 mb-4">Selamat Datang di testnet.id</h1>
+        <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+          Tukar stablecoin ke crypto dengan mudah menggunakan jaringan testnet. Platform ini adalah simulasi dari layanan pertukaran seperti Changelly.
+        </p>
+
+        <Link
+          href="/buy"
+          className="inline-block bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-blue-700 transition"
+        >
+          Mulai Tukar Sekarang
+        </Link>
+      </div>
     </main>
   )
 }
