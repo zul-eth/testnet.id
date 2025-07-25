@@ -48,15 +48,20 @@ function GET() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, prisma_1.prisma.order.findMany({
-                        orderBy: { createdAt: 'desc' },
+                        orderBy: { createdAt: "desc" },
                         include: {
                             pair: {
                                 include: {
                                     baseCoin: true,
-                                    quoteCoin: true,
-                                },
+                                    quoteCoin: true
+                                }
                             },
-                        },
+                            paymentRoute: {
+                                include: {
+                                    coin: true
+                                }
+                            }
+                        }
                     })];
                 case 1:
                     orders = _a.sent();
@@ -69,20 +74,32 @@ exports.GET = GET;
 // POST /api/orders
 function POST(req) {
     return __awaiter(this, void 0, void 0, function () {
-        var data, pairId, amount, addressDestination, network, orderHash, expiresAt, order, err_1;
+        var data, pairId, amount, addressDestination, network, paymentRouteId, orderHash, expiresAt, route, order, err_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 3, , 4]);
+                    _a.trys.push([0, 4, , 5]);
                     return [4 /*yield*/, req.json()];
                 case 1:
                     data = _a.sent();
-                    pairId = data.pairId, amount = data.amount, addressDestination = data.addressDestination, network = data.network;
-                    if (!pairId || !amount || !addressDestination || !network) {
-                        return [2 /*return*/, server_1.NextResponse.json({ error: 'Missing required fields' }, { status: 400 })];
+                    pairId = data.pairId, amount = data.amount, addressDestination = data.addressDestination, network = data.network, paymentRouteId = data.paymentRouteId;
+                    if (!pairId ||
+                        !amount ||
+                        !addressDestination ||
+                        !network ||
+                        !paymentRouteId) {
+                        return [2 /*return*/, server_1.NextResponse.json({ error: "Missing required fields" }, { status: 400 })];
                     }
                     orderHash = (0, uuid_1.v4)();
                     expiresAt = (0, date_fns_1.addMinutes)(new Date(), 15);
+                    return [4 /*yield*/, prisma_1.prisma.paymentRoute.findUnique({
+                            where: { id: paymentRouteId }
+                        })];
+                case 2:
+                    route = _a.sent();
+                    if (!route) {
+                        return [2 /*return*/, server_1.NextResponse.json({ error: "Invalid payment route" }, { status: 400 })];
+                    }
                     return [4 /*yield*/, prisma_1.prisma.order.create({
                             data: {
                                 pairId: pairId,
@@ -91,24 +108,31 @@ function POST(req) {
                                 network: network,
                                 orderHash: orderHash,
                                 expiresAt: expiresAt,
+                                paymentRouteId: paymentRouteId,
+                                payment: route.address // ambil dari PaymentRoute
                             },
                             include: {
                                 pair: {
                                     include: {
                                         baseCoin: true,
-                                        quoteCoin: true,
-                                    },
+                                        quoteCoin: true
+                                    }
                                 },
-                            },
+                                paymentRoute: {
+                                    include: {
+                                        coin: true
+                                    }
+                                }
+                            }
                         })];
-                case 2:
+                case 3:
                     order = _a.sent();
                     return [2 /*return*/, server_1.NextResponse.json(order)];
-                case 3:
+                case 4:
                     err_1 = _a.sent();
-                    console.error('GAGAL BUAT ORDER:', err_1);
-                    return [2 /*return*/, server_1.NextResponse.json({ error: 'Internal Server Error', detail: err_1.message }, { status: 500 })];
-                case 4: return [2 /*return*/];
+                    console.error("GAGAL BUAT ORDER:", err_1);
+                    return [2 /*return*/, server_1.NextResponse.json({ error: "Internal Server Error", detail: err_1.message }, { status: 500 })];
+                case 5: return [2 /*return*/];
             }
         });
     });

@@ -1,62 +1,47 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Step1_ExchangeForm from '@/components/steps/Step1_ExchangeForm'
 import Step2_AddressForm from '@/components/steps/Step2_AddressForm'
 import Step3_TransactionStatus from '@/components/steps/Step3_TransactionStatus'
-import type { FormState } from '@/types/form'
-import { getRate } from '@/utils/rates'
-import { v4 as uuidv4 } from 'uuid'
+
+interface FormState {
+  amount: string
+  baseCoinSymbol: string
+  quoteCoinSymbol: string
+  receiveAmount: string
+  address: string
+  network: 'TESTNET' | 'MAINNET'
+  pairId?: string
+  paymentRouteId?: string
+  orderId?: string
+  orderHash?: string
+}
 
 const initialForm: FormState = {
   amount: '',
-  currency: 'USDT',
-  receiveCurrency: 'ETH',
+  baseCoinSymbol: '',
+  quoteCoinSymbol: '',
   receiveAmount: '',
   address: '',
-  txId: '',
+  network: 'TESTNET',
 }
 
-export default function Page() {
+export default function OrderPage() {
   const [form, setForm] = useState<FormState>(initialForm)
-
-  const [step, setStep] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('step')
-      return saved ? parseInt(saved, 10) : 1
-    }
-    return 1
-  })
-
-  useEffect(() => {
-    localStorage.setItem('step', String(step))
-  }, [step])
-
-  const handleChange = (updated: FormState) => {
-    const amountNum = parseFloat(updated.amount)
-    const rate = getRate(updated.currency, updated.receiveCurrency)
-    const estimated = !isNaN(amountNum) && rate
-      ? (amountNum * rate).toFixed(6)
-      : ''
-    setForm({ ...updated, receiveAmount: estimated })
-  }
+  const [step, setStep] = useState<number>(1)
 
   const handleNext = () => {
-    if (step === 2) {
-      const txId = uuidv4()
-      setForm((prev) => ({ ...prev, txId }))
-    }
-    setStep((s) => s + 1)
+    setStep(s => s + 1)
   }
 
   const handleBack = () => {
-    setStep((s) => s - 1)
+    setStep(s => s - 1)
   }
 
   const handleReset = () => {
     setForm(initialForm)
     setStep(1)
-    localStorage.removeItem('step')
   }
 
   return (
@@ -65,7 +50,7 @@ export default function Page() {
         {step === 1 && (
           <Step1_ExchangeForm
             data={form}
-            onChange={handleChange}
+            onChange={setForm}
             onNext={handleNext}
           />
         )}

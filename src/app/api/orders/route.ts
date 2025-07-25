@@ -14,6 +14,11 @@ export async function GET() {
           quoteCoin: true,
         },
       },
+      paymentRoute: {
+        include: {
+          coin: true,
+        },
+      },
     },
   })
 
@@ -24,14 +29,22 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json()
-    const { pairId, amount, addressDestination, network } = data
+    const { pairId, amount, addressDestination, network, paymentRouteId } = data
 
-    if (!pairId || !amount || !addressDestination || !network) {
+    if (!pairId || !amount || !addressDestination || !network || !paymentRouteId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const orderHash = uuidv4()
     const expiresAt = addMinutes(new Date(), 15)
+
+    const route = await prisma.paymentRoute.findUnique({
+      where: { id: paymentRouteId },
+    })
+
+    if (!route) {
+      return NextResponse.json({ error: 'Invalid payment route' }, { status: 400 })
+    }
 
     const order = await prisma.order.create({
       data: {
@@ -41,12 +54,19 @@ export async function POST(req: NextRequest) {
         network,
         orderHash,
         expiresAt,
+        paymentRouteId,
+        payment: route.address, // ambil dari PaymentRoute
       },
       include: {
         pair: {
           include: {
             baseCoin: true,
             quoteCoin: true,
+          },
+        },
+        paymentRoute: {
+          include: {
+            coin: true,
           },
         },
       },

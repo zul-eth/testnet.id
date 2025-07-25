@@ -19,9 +19,23 @@ enum OrderStatus {
   FAILED
 }
 
+model PaymentRoute {
+  id        String   @id @default(uuid())
+  coin      Coin     @relation("CoinToPaymentRoute", fields: [coinId], references: [id])
+  coinId    String
+  network   Network
+  protocol  String
+  address   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relasi ke Order
+  orders Order[] @relation("PaymentRouteToOrder")
+}
+
 model Coin {
   id        String   @id @default(uuid())
-  network   Network  @default(TESTNET) // ✅ DITAMBAHKAN
+  network   Network  @default(TESTNET)
   name      String
   symbol    String   @unique
   iconUrl   String
@@ -29,21 +43,22 @@ model Coin {
   updatedAt DateTime @updatedAt
 
   // Relasi
-  basePairs  Pair[] @relation("BaseCoin")
-  quotePairs Pair[] @relation("QuoteCoin")
+  basePairs     Pair[]         @relation("BaseCoin")
+  quotePairs    Pair[]         @relation("QuoteCoin")
+  paymentRoutes PaymentRoute[] @relation("CoinToPaymentRoute")
 }
 
 model Pair {
-  id           String   @id @default(uuid())
-  network      Network  @default(TESTNET)
-  baseCoin     Coin     @relation("BaseCoin", fields: [baseCoinId], references: [id])
-  baseCoinId   String
-  quoteCoin    Coin     @relation("QuoteCoin", fields: [quoteCoinId], references: [id])
-  quoteCoinId  String
-  priceBase    Float
-  priceQuote   Float
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(uuid())
+  network     Network  @default(TESTNET)
+  baseCoin    Coin     @relation("BaseCoin", fields: [baseCoinId], references: [id])
+  baseCoinId  String
+  quoteCoin   Coin     @relation("QuoteCoin", fields: [quoteCoinId], references: [id])
+  quoteCoinId String
+  priceBase   Float
+  priceQuote  Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relasi
   orders Order[]
@@ -63,7 +78,9 @@ model Order {
   updatedAt          DateTime    @updatedAt
 
   // Relasi
-  history OrderHistory?
+  history        OrderHistory?
+  paymentRoute   PaymentRoute  @relation("PaymentRouteToOrder", fields: [paymentRouteId], references: [id])
+  paymentRouteId String
 }
 
 model OrderHistory {

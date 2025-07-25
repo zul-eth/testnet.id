@@ -36,42 +36,39 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GET = void 0;
+exports.PATCH = void 0;
 var server_1 = require("next/server");
 var prisma_1 = require("@/lib/prisma");
-function GET(req, _a) {
+var client_1 = require("@prisma/client");
+function PATCH(req, _a) {
     var params = _a.params;
     return __awaiter(this, void 0, void 0, function () {
-        var order, err_1;
+        var body, status, order, err_1;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    _b.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, prisma_1.prisma.order.findUnique({
-                            where: { orderHash: params.hash },
-                            include: {
-                                pair: {
-                                    include: {
-                                        baseCoin: true,
-                                        quoteCoin: true,
-                                    },
-                                },
-                                history: true,
-                            },
-                        })];
+                    _b.trys.push([0, 3, , 4]);
+                    return [4 /*yield*/, req.json()];
                 case 1:
-                    order = _b.sent();
-                    if (!order) {
-                        return [2 /*return*/, server_1.NextResponse.json({ error: 'Order not found' }, { status: 404 })];
+                    body = _b.sent();
+                    status = body.status;
+                    if (!status || !Object.values(client_1.OrderStatus).includes(status)) {
+                        return [2 /*return*/, server_1.NextResponse.json({ error: "Invalid status value" }, { status: 400 })];
                     }
-                    return [2 /*return*/, server_1.NextResponse.json(order)];
+                    return [4 /*yield*/, prisma_1.prisma.order.update({
+                            where: { orderHash: params.hash },
+                            data: { status: status }
+                        })];
                 case 2:
+                    order = _b.sent();
+                    return [2 /*return*/, server_1.NextResponse.json(order)];
+                case 3:
                     err_1 = _b.sent();
-                    console.error('GAGAL GET ORDER:', err_1);
-                    return [2 /*return*/, server_1.NextResponse.json({ error: 'Internal Server Error', detail: err_1.message }, { status: 500 })];
-                case 3: return [2 /*return*/];
+                    console.error("GAGAL UPDATE ORDER STATUS:", err_1);
+                    return [2 /*return*/, server_1.NextResponse.json({ error: "Internal Server Error", detail: err_1.message }, { status: 500 })];
+                case 4: return [2 /*return*/];
             }
         });
     });
 }
-exports.GET = GET;
+exports.PATCH = PATCH;

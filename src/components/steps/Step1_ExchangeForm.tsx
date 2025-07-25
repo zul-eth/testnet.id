@@ -1,102 +1,210 @@
 'use client'
 
-import { HiOutlineInformationCircle } from 'react-icons/hi'
-import { FormState } from '@/types/form'
-import CurrencyDropdown from '@/components/shared/CurrencyDropdown'
 import { useEffect, useState } from 'react'
+import { Info } from 'lucide-react'
+import CurrencyDropdown from '@/components/shared/CurrencyDropdown'
 
-type Props = {
+interface Coin {
+  id: string
+  name: string
+  symbol: string
+  iconUrl: string
+}
+
+interface Pair {
+  id: string
+  baseCoin: Coin
+  quoteCoin: Coin
+  priceBase: number
+  priceQuote: number
+}
+
+interface PaymentRoute {
+  id: string
+  protocol: string
+  address: string
+  coin: Coin
+}
+
+interface FormState {
+  amount: string
+  baseCoinSymbol: string
+  quoteCoinSymbol: string
+  receiveAmount: string
+  address: string
+  network: 'TESTNET' | 'MAINNET'
+  pairId?: string
+  paymentRouteId?: string  // ⬅️ field baru
+}
+
+interface Props {
   data: FormState
   onChange: (form: FormState) => void
   onNext: () => void
 }
 
 export default function Step1_ExchangeForm({ data, onChange, onNext }: Props) {
-  const [stableCoins, setStableCoins] = useState([])
-  const [cryptoCoins, setCryptoCoins] = useState([])
+  const [pairs, setPairs] = useState<Pair[]>([])
+  const [selectedPair, setSelectedPair] = useState<Pair | null>(null)
+  const [paymentRoutes, setPaymentRoutes] = useState<PaymentRoute[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingRoute, setLoadingRoute] = useState(false)
 
-  // Ambil data koin dari API
+  // Ambil data pair berdasarkan network
   useEffect(() => {
-    const fetchCoins = async () => {
-      const [sendRes, receiveRes] = await Promise.all([
-        fetch('/api/supported-send-coins'),
-        fetch('/api/supported-receive-coins')
-      ])
-      const sendData = await sendRes.json()
-      const receiveData = await receiveRes.json()
-      setStableCoins(sendData)
-      setCryptoCoins(receiveData)
-      setLoading(false)
-    }
-    fetchCoins()
-  }, [])
-
-  // Hitung estimasi receiveAmount dari API rate
-  const handleAmountChange = async (amount: string) => {
-    const amountNum = parseFloat(amount)
-    let estimated = ''
-
-    if (!isNaN(amountNum) && data.currency && data.receiveCurrency) {
+    const fetchPairs = async () => {
       try {
-        const res = await fetch(`/api/rates?from=${data.currency}&to=${data.receiveCurrency}`)
-        const rateData = await res.json()
-        if (rateData?.rate) {
-          estimated = (amountNum * rateData.rate).toFixed(6)
-        }
-      } catch (err) {
-        console.error('Error fetching rate:', err)
+        const res = await fetch(`/api/pairs?network=${data.network}`)
+        if (!res.ok) throw new Error('Failed to fetch pairs')
+        const pairsData = await res.json()
+        setPairs(pairsData)
+        setLoading(false)
+      } catch (error) {
+        console.error('Error fetching pairs:', error)
+        setLoading(false)
       }
     }
+    fetchPairs()
+  }, [data.network])
 
-    onChange({ ...data, amount, receiveAmount: estimated })
+  // Update selectedPair saat symbol berubah
+  useEffect(() => {
+    const pair = pairs.find(
+      p => p.baseCoin.symbol === data.baseCoinSymbol &&
+           p.quoteCoin.symbol === data.quoteCoinSymbol
+    )
+
+    if (pair) {
+      setSelectedPair(pair)
+      onChange({ ...data, pairId: pair.id }) // Set pairId di form
+      if (data.amount) {
+        calculateReceiveAmount(data.amount, pair)
+      }
+    } else {
+      setSelectedPair(null)
+      onChange({ ...data, pairId: undefined, receiveAmount: '', paymentRouteId: undefined })
+      setPaymentRoutes([])
+    }
+  }, [data.baseCoinSymbol, data.quoteCoinSymbol, pairs])
+
+  // Fetch payment routes ketika baseCoinSymbol & network valid
+  useEffect(() => {
+    const selectedBaseCoin = pairs.find(p => p.baseCoin.symbol === data.baseCoinSymbol)?.baseCoin
+    if (!selectedBaseCoin || !data.network) {
+      setPaymentRoutes([])
+      return
+    }
+    setLoadingRoute(true)
+    fetch(`/api/payment?coinId=${selectedBaseCoin.id}&network=${data.network}`)
+      .then(res => res.json())
+      .then(routes => {
+        setPaymentRoutes(routes)
+        // Reset paymentRouteId jika sudah tidak valid
+        if (!routes.some(r => r.id === data.paymentRouteId)) {
+          onChange({ ...data, paymentRouteId: undefined })
+        }
+      })
+      .finally(() => setLoadingRoute(false))
+  }, [data.baseCoinSymbol, data.network, pairs])
+
+  // Hitung estimasi receiveAmount
+  const calculateReceiveAmount = (amount: string, pair: Pair | null) => {
+    if (!pair || !amount || isNaN(parseFloat(amount))) {
+      onChange({ ...data, amount, receiveAmount: '' })
+      return
+    }
+    const amountNum = parseFloat(amount)
+    const rate = pair.priceQuote / pair.priceBase
+    const receiveAmount = (amountNum * rate).toFixed(6)
+    onChange({
+      ...data,
+      amount,
+      receiveAmount,
+    })
   }
 
-  const isValid = data.amount && parseFloat(data.amount) > 0
+  const handleAmountChange = (amount: string) => {
+    calculateReceiveAmount(amount, selectedPair)
+  }
+
+  // Ambil baseCoin & quoteCoin unik
+  const baseCoins = [...new Map(pairs.map(p => [p.baseCoin.id, p.baseCoin])).values()]
+  const quoteCoins = [...new Map(pairs.map(p => [p.quoteCoin.id, p.quoteCoin])).values()]
+
+  const isValid = data.amount && parseFloat(data.amount) > 0 && data.pairId && data.paymentRouteId
 
   if (loading) {
     return (
-      <div className="text-center text-gray-400 p-6">Loading coins...</div>
+      <div className="text-center text-gray-400 p-6">Loading pairs...</div>
     )
   }
 
   return (
     <div className="px-4 py-6 max-w-md mx-auto text-sm bg-[#f9f9fb] min-h-screen">
-      {/* Deskripsi Step */}
       <div className="mb-3 text-gray-600 text-sm leading-relaxed">
-        Langkah pertama, pilih pasangan stablecoin dan crypto yang ingin kamu tukarkan. 
-        Masukkan jumlah untuk melihat estimasi jumlah yang akan kamu dapatkan.
+        Pilih pasangan crypto yang ingin ditukar dan masukkan jumlah untuk melihat estimasi.
       </div>
 
-      {/* Card Container */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
         <h2 className="text-base font-semibold text-gray-800 mb-4">
           Select pair <span className="text-blue-500 font-bold">1/3</span>
         </h2>
+
+        {/* Network */}
+        <div className="mb-4">
+          <label className="text-xs text-gray-500 mb-1 block">Network</label>
+          <select
+            value={data.network}
+            onChange={(e) => onChange({ ...data, network: e.target.value as 'TESTNET' | 'MAINNET' })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="TESTNET">Testnet</option>
+            <option value="MAINNET">Mainnet</option>
+          </select>
+        </div>
 
         {/* You Send */}
         <div className="mb-4">
           <p className="text-sm text-gray-500 mb-2">You send</p>
           <div className="flex items-center justify-between">
             <CurrencyDropdown
-              value={data.currency}
-              onChange={(val) => {
-                onChange({ ...data, currency: val })
-                handleAmountChange(data.amount)
-              }}
-              items={stableCoins}
+              value={data.baseCoinSymbol}
+              onChange={(val) => onChange({ ...data, baseCoinSymbol: val })}
+              coins={baseCoins}
+              placeholder="Select coin"
               noBox
             />
             <input
               type="number"
               inputMode="decimal"
-              className="w-1/2 text-right text-lg font-semibold text-gray-800 bg-transparent outline-none focus:outline-none placeholder:text-gray-400"
-              placeholder="You send"
+              className="w-1/2 text-right text-lg font-semibold text-gray-800 bg-transparent outline-none placeholder:text-gray-400"
+              placeholder="0.00"
               value={data.amount}
               onChange={(e) => handleAmountChange(e.target.value)}
             />
           </div>
         </div>
+
+        {/* Payment Route */}
+        {paymentRoutes.length > 0 && (
+          <div className="mb-4">
+            <label className="text-xs text-gray-500 mb-1 block">Payment Method</label>
+            <select
+              value={data.paymentRouteId || ''}
+              onChange={e => onChange({ ...data, paymentRouteId: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              disabled={loadingRoute}
+            >
+              <option value="">Pilih Payment Method</option>
+              {paymentRoutes.map((route) => (
+                <option key={route.id} value={route.id}>
+                  {route.protocol} — {route.coin.symbol} ({route.address.slice(0, 10)}...{route.address.slice(-6)})
+                </option>
+              ))}
+            </select>
+            {loadingRoute && <div className="text-xs text-gray-400 mt-1">Loading payment methods...</div>}
+          </div>
+        )}
 
         <div className="border-t border-gray-300 my-4 opacity-70" />
 
@@ -105,37 +213,35 @@ export default function Step1_ExchangeForm({ data, onChange, onNext }: Props) {
           <p className="text-sm text-gray-500 mb-2">You get</p>
           <div className="flex items-center justify-between">
             <CurrencyDropdown
-              value={data.receiveCurrency}
-              onChange={(val) => {
-                onChange({ ...data, receiveCurrency: val })
-                handleAmountChange(data.amount)
-              }}
-              items={cryptoCoins}
+              value={data.quoteCoinSymbol}
+              onChange={(val) => onChange({ ...data, quoteCoinSymbol: val })}
+              coins={quoteCoins}
+              placeholder="Select coin"
               noBox
             />
-            <div className="text-right text-gray-800 font-semibold text-lg flex items-center gap-2">
-              {data.receiveAmount ? `~ ${data.receiveAmount}` : 'You get'}
-              {data.receiveAmount && (
-                <span className="text-xs font-semibold bg-gray-200 text-gray-800 px-2 py-0.5 rounded">
-                  {data.receiveCurrency}
-                </span>
-              )}
+            <div className="text-right text-gray-800 font-semibold text-lg">
+              {data.receiveAmount || '0.00'}
             </div>
           </div>
 
-          {!data.receiveAmount && (
+          {selectedPair && (
+            <p className="mt-2 text-xs text-gray-500">
+              Rate: 1 {selectedPair.baseCoin.symbol} = {(selectedPair.priceQuote / selectedPair.priceBase).toFixed(4)} {selectedPair.quoteCoin.symbol}
+            </p>
+          )}
+
+          {!data.receiveAmount && data.amount && (
             <p className="mt-2 flex items-center text-xs text-purple-600">
-              <HiOutlineInformationCircle className="mr-1 text-base" />
-              Enter the amount to view the offers
+              <Info className="mr-1 w-4 h-4" />
+              No matching pair found for selected coins
             </p>
           )}
         </div>
 
-        {/* Button */}
         <button
           onClick={onNext}
           disabled={!isValid}
-          className={`w-full py-3 mt-2 rounded-xl text-base font-semibold ${
+          className={`w-full py-3 mt-2 rounded-xl text-base font-semibold transition-colors ${
             isValid
               ? 'bg-green-300 hover:bg-green-400 text-black'
               : 'bg-green-100 text-gray-400 cursor-not-allowed'
@@ -143,21 +249,6 @@ export default function Step1_ExchangeForm({ data, onChange, onNext }: Props) {
         >
           Next step
         </button>
-
-        {/* Promo */}
-        <div className="mt-4 text-center text-sm">
-          <span className="inline-flex items-center justify-center text-green-500 font-medium">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5 text-blue-500 mr-1"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M5 3a1 1 0 00-1 1v2a2 2 0 002 2h1v6H6a2 2 0 00-2 2v2a1 1 0 001 1h14a1 1 0 001-1v-2a2 2 0 00-2-2h-1V8h1a2 2 0 002-2V4a1 1 0 00-1-1H5z" />
-            </svg>
-            <a href="#" className="underline">I have a promo code</a>
-          </span>
-        </div>
       </div>
     </div>
   )

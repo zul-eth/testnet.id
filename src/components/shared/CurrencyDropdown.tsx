@@ -1,54 +1,67 @@
 'use client'
 
+import { ChevronDown } from 'lucide-react'
 import Image from 'next/image'
-import { GoChevronDown } from 'react-icons/go'
 
-type CurrencyItem = {
-  label: string
+interface Coin {
+  id: string
   name: string
-  icon: string // path URL dari /public/crypto atau full URL
+  symbol: string
+  iconUrl: string
 }
 
-type Props = {
+interface Props {
   value: string
   onChange: (val: string) => void
-  items: CurrencyItem[]          // Ganti dari tipe statis ke dinamis
+  coins: Coin[]
   noBox?: boolean
+  placeholder?: string
 }
 
-export default function CurrencyDropdown({ value, onChange, items, noBox }: Props) {
-  const selected = items.find((opt) => opt.name === value || opt.label === value)
+export default function CurrencyDropdown({ 
+  value, 
+  onChange, 
+  coins, 
+  noBox = false,
+  placeholder = 'Select coin' 
+}: Props) {
+  const selected = coins.find((c) => c.symbol === value)
 
   return (
-    <div className="w-fit">
-      <div className="relative flex items-center">
-        {selected?.icon && (
-          <Image
-            src={selected.icon}
-            alt={selected.name}
-            width={24}
-            height={24}
-            className="mr-2"
+    <div className="relative inline-block w-fit">
+      <div className={`flex items-center ${noBox ? '' : 'border border-gray-300 rounded-lg px-3 py-2'}`}>
+        {selected?.iconUrl && (
+          <img
+            src={selected.iconUrl}
+            alt={selected.symbol}
+            className="w-5 h-5 mr-2 rounded-full"
           />
         )}
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`appearance-none bg-transparent text-base font-semibold text-gray-800 pr-6 ${
-            noBox ? 'border-none outline-none focus:ring-0' : 'border border-gray-300 rounded-lg py-2 px-3'
+          className={`appearance-none bg-transparent pr-6 font-semibold text-gray-800 text-sm focus:outline-none ${
+            noBox ? '' : 'w-full'
           }`}
         >
-          {items.map((currency) => (
-            <option key={currency.name} value={currency.name}>
-              {currency.name}
+          <option value="">{placeholder}</option>
+          {coins.map((coin) => (
+            <option key={coin.id} value={coin.symbol}>
+              {coin.symbol}
             </option>
           ))}
         </select>
-        <div className="absolute right-1 pointer-events-none text-gray-500">
-          <GoChevronDown size={16} />
+
+        {/* Chevron icon */}
+        <div className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+          <ChevronDown size={16} />
         </div>
       </div>
-      <p className="text-xs text-gray-500 mt-1">{selected?.label}</p>
+
+      {/* Optional description */}
+      {selected && (
+        <p className="text-xs text-gray-500 mt-1 ml-1">{selected.name}</p>
+      )}
     </div>
   )
 }
