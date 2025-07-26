@@ -12,7 +12,7 @@ export async function POST() {
   for (const ord of pending) {
     try {
       const balance = await provider.getBalance(ord.paymentAddress as string)
-      if (balance > 0n) {
+      if (balance > BigInt(0)) {
         await prisma.order.update({
           where: { id: ord.id },
           data: { status: 'CONFIRMED' },

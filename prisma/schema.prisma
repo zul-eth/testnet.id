@@ -19,7 +19,6 @@ enum OrderStatus {
   FAILED
 }
 
-
 model Coin {
   id        String   @id @default(uuid())
   network   Network  @default(TESTNET)
@@ -30,8 +29,8 @@ model Coin {
   updatedAt DateTime @updatedAt
 
   // Relasi
-  basePairs     Pair[]         @relation("BaseCoin")
-  quotePairs    Pair[]         @relation("QuoteCoin")
+  basePairs  Pair[] @relation("BaseCoin")
+  quotePairs Pair[] @relation("QuoteCoin")
 }
 
 model Pair {
@@ -50,6 +49,19 @@ model Pair {
   orders Order[]
 }
 
+model PaymentRoute {
+  id             String   @id @default(uuid())
+  network        Network  @default(TESTNET)
+  routeName      String // E.g., "EVM", "SOLANA", "TRON"
+  coinSymbol     String // E.g., "ETH", "SOL", "TRX"
+  derivationPath String // E.g., "m/44'/60'/0'/0/0"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relasi
+  orders Order[] @relation("PaymentRouteToOrder")
+}
+
 model Order {
   id                 String      @id @default(uuid())
   network            Network     @default(TESTNET)
@@ -58,17 +70,17 @@ model Order {
   pairId             String
   amount             Float
   addressDestination String
-  /// Unique address derived from HD wallet for payment
-  paymentAddress     String?
-  /// HD wallet index used to derive paymentAddress
-  hdIndex            Int?
-  protocol           String
+  paymentAddress     String // Derived address
+  hdIndex            Int // HD wallet index
+  protocol           String // Optional: for tracking protocol like 'ERC20', etc
   status             OrderStatus @default(PENDING)
   expiresAt          DateTime
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 
   // Relasi
+  paymentRoute   PaymentRoute  @relation("PaymentRouteToOrder", fields: [paymentRouteId], references: [id])
+  paymentRouteId String
   history        OrderHistory?
 }
 

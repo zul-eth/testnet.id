@@ -37,7 +37,9 @@ export async function POST(req: NextRequest) {
 
     const order = await prisma.order.create({
       data: {
-        pairId,
+        pair: {
+          connect: { id: pairId },
+        },
         amount: parseFloat(amount),
         addressDestination,
         network,
