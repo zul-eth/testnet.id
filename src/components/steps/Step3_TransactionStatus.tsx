@@ -75,13 +75,7 @@ export default function Step3_TransactionStatus({ data, onBack, onCancel }: Prop
     setTimeout(() => setCopied(false), 1500)
   }
 
-  if (!data.orderId || !data.orderHash) {
-    return (
-      <div className="p-6 text-center text-red-500 font-medium">
-        ❌ Order not found. Please go back and try again.
-      </div>
-    )
-  }
+
 
   return (
     <div className="px-4 pt-6 pb-16 max-w-md mx-auto text-sm bg-[#f9f9fb] min-h-screen">

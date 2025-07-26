@@ -12,6 +12,8 @@ interface FormState {
     network: "TESTNET" | "MAINNET";
     pairId?: string;
     paymentRouteId?: string; // ⬅️ Tambahkan ini
+    paymentAddress?: string;
+    protocol?: string;
     orderId?: string;
     orderHash?: string;
 }
@@ -61,6 +63,7 @@ export default function Step2_AddressForm({
             onChange({
                 ...data,
 <<<<<<< ours
+<<<<<<< ours
                 orderHash: order.orderHash,
                 orderId: order.id,
                 paymentAddress: order.paymentAddress,
@@ -68,6 +71,12 @@ export default function Step2_AddressForm({
 =======
                 orderId: order.id,
                 orderHash: order.orderHash
+>>>>>>> theirs
+=======
+                orderHash: order.orderHash,
+                orderId: order.id,
+                paymentAddress: order.paymentRoute?.address,
+                protocol: order.paymentRoute?.protocol,
 >>>>>>> theirs
             });
             onNext();

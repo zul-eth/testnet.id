@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
@@ -35,9 +34,7 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-=======
 # testnet.id
->>>>>>> 4ae70c0a8e23f009ed61c1d5f16d790ff73b1aab
 
 #masuk
 - sudo -u postgres psql
@@ -59,12 +56,12 @@ GRANT ALL PRIVILEGES ON DATABASE testnet_id TO testnet_user;
 > Admin:
 • create/delete/edit coin mainnet/testnet
 • create/delete/edit pair + price mainnet/testnet
-• cek histroy (pesanan yg berhasil) mainnet/testnet
+• cek history (pesanan yg berhasil) mainnet/testnet
 
-# tegnology
+# technology
 - nextjs 13.4
 - postgresql + schema prisma (metode api= server action + route api)
-- talwind
+- tailwind
 
 project-root/
 ├── prisma/

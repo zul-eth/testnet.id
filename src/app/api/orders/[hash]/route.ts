@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { OrderStatus } from '@prisma/client'
 
+<<<<<<< ours
 export async function GET(_req: NextRequest, { params }: { params: { hash: string } }) {
   const order = await prisma.order.findUnique({
     where: { orderHash: params.hash },
@@ -16,6 +17,31 @@ export async function GET(_req: NextRequest, { params }: { params: { hash: strin
   }
 
   return NextResponse.json(order)
+=======
+// GET /api/orders/[hash]
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { hash: string } }
+) {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { orderHash: params.hash },
+      include: { paymentRoute: true },
+    })
+
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(order)
+  } catch (err: any) {
+    console.error('GAGAL GET ORDER:', err)
+    return NextResponse.json(
+      { error: 'Internal Server Error', detail: err.message },
+      { status: 500 }
+    )
+  }
+>>>>>>> theirs
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { hash: string } }) {

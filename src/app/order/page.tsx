@@ -14,6 +14,8 @@ interface FormState {
   network: 'TESTNET' | 'MAINNET'
   pairId?: string
   paymentRouteId?: string
+  paymentAddress?: string
+  protocol?: string
   orderId?: string
   orderHash?: string
 }
@@ -25,6 +27,8 @@ const initialForm: FormState = {
   receiveAmount: '',
   address: '',
   network: 'TESTNET',
+  paymentAddress: '',
+  protocol: '',
 }
 
 export default function OrderPage() {
