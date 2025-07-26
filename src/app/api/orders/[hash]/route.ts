@@ -2,31 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { OrderStatus } from '@prisma/client'
 
-<<<<<<< ours
-export async function GET(_req: NextRequest, { params }: { params: { hash: string } }) {
-  const order = await prisma.order.findUnique({
-    where: { orderHash: params.hash },
-    include: {
-      pair: { include: { baseCoin: true, quoteCoin: true } },
-      paymentRoute: { include: { coin: true } },
-    },
-  })
-
-  if (!order) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  }
-
-  return NextResponse.json(order)
-=======
 // GET /api/orders/[hash]
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { hash: string } }
-) {
+export async function GET(_req: NextRequest, { params }: { params: { hash: string } }) {
   try {
     const order = await prisma.order.findUnique({
       where: { orderHash: params.hash },
-      include: { paymentRoute: true },
+      include: {
+        pair: { include: { baseCoin: true, quoteCoin: true } },
+        paymentRoute: { include: { coin: true } },
+      },
     })
 
     if (!order) {
@@ -41,7 +25,6 @@ export async function GET(
       { status: 500 }
     )
   }
->>>>>>> theirs
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { hash: string } }) {

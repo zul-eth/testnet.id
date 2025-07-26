@@ -64,8 +64,8 @@ export default function Step2_AddressForm({
                 ...data,
                 orderHash: order.orderHash,
                 orderId: order.id,
-                paymentAddress: order.paymentAddress,
-                protocol: order.paymentRoute.protocol,
+                paymentAddress: order.paymentAddress ?? order.paymentRoute?.address,
+                protocol: order.paymentRoute?.protocol,
             });
             onNext();
         } catch (err) {
