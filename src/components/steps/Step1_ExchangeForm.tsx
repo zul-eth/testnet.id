@@ -19,12 +19,7 @@ interface Pair {
   priceQuote: number
 }
 
-interface PaymentRoute {
-  id: string
-  protocol: string
-  address: string
-  coin: Coin
-}
+const PROTOCOLS = ['EVM', 'SOLANA']
 
 interface FormState {
   amount: string
@@ -34,7 +29,7 @@ interface FormState {
   address: string
   network: 'TESTNET' | 'MAINNET'
   pairId?: string
-  paymentRouteId?: string  // ⬅️ field baru
+  protocol?: string
 }
 
 interface Props {
@@ -46,9 +41,7 @@ interface Props {
 export default function Step1_ExchangeForm({ data, onChange, onNext }: Props) {
   const [pairs, setPairs] = useState<Pair[]>([])
   const [selectedPair, setSelectedPair] = useState<Pair | null>(null)
-  const [paymentRoutes, setPaymentRoutes] = useState<PaymentRoute[]>([])
   const [loading, setLoading] = useState(true)
-  const [loadingRoute, setLoadingRoute] = useState(false)
 
   // Ambil data pair berdasarkan network
   useEffect(() => {
@@ -76,36 +69,22 @@ export default function Step1_ExchangeForm({ data, onChange, onNext }: Props) {
 
     if (pair) {
       setSelectedPair(pair)
-      onChange({ ...data, pairId: pair.id }) // Set pairId di form
+      onChange({ ...data, pairId: pair.id })
       if (data.amount) {
         calculateReceiveAmount(data.amount, pair)
       }
     } else {
       setSelectedPair(null)
-      onChange({ ...data, pairId: undefined, receiveAmount: '', paymentRouteId: undefined })
-      setPaymentRoutes([])
+      onChange({ ...data, pairId: undefined, receiveAmount: '', protocol: undefined })
     }
   }, [data.baseCoinSymbol, data.quoteCoinSymbol, pairs])
 
-  // Fetch payment routes ketika baseCoinSymbol & network valid
+  // Reset protocol when pair changes
   useEffect(() => {
-    const selectedBaseCoin = pairs.find(p => p.baseCoin.symbol === data.baseCoinSymbol)?.baseCoin
-    if (!selectedBaseCoin || !data.network) {
-      setPaymentRoutes([])
-      return
+    if (!data.pairId) {
+      onChange({ ...data, protocol: undefined })
     }
-    setLoadingRoute(true)
-    fetch(`/api/payment?coinId=${selectedBaseCoin.id}&network=${data.network}`)
-      .then(res => res.json())
-      .then(routes => {
-        setPaymentRoutes(routes)
-        // Reset paymentRouteId jika sudah tidak valid
-        if (!routes.some(r => r.id === data.paymentRouteId)) {
-          onChange({ ...data, paymentRouteId: undefined })
-        }
-      })
-      .finally(() => setLoadingRoute(false))
-  }, [data.baseCoinSymbol, data.network, pairs])
+  }, [data.pairId])
 
   // Hitung estimasi receiveAmount
   const calculateReceiveAmount = (amount: string, pair: Pair | null) => {
@@ -131,7 +110,7 @@ export default function Step1_ExchangeForm({ data, onChange, onNext }: Props) {
   const baseCoins = [...new Map(pairs.map(p => [p.baseCoin.id, p.baseCoin])).values()]
   const quoteCoins = [...new Map(pairs.map(p => [p.quoteCoin.id, p.quoteCoin])).values()]
 
-  const isValid = data.amount && parseFloat(data.amount) > 0 && data.pairId && data.paymentRouteId
+  const isValid = data.amount && parseFloat(data.amount) > 0 && data.pairId && data.protocol
 
   if (loading) {
     return (
@@ -185,26 +164,20 @@ export default function Step1_ExchangeForm({ data, onChange, onNext }: Props) {
           </div>
         </div>
 
-        {/* Payment Route */}
-        {paymentRoutes.length > 0 && (
-          <div className="mb-4">
-            <label className="text-xs text-gray-500 mb-1 block">Payment Method</label>
-            <select
-              value={data.paymentRouteId || ''}
-              onChange={e => onChange({ ...data, paymentRouteId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-              disabled={loadingRoute}
-            >
-              <option value="">Pilih Payment Method</option>
-              {paymentRoutes.map((route) => (
-                <option key={route.id} value={route.id}>
-                  {route.protocol} — {route.coin.symbol} ({route.address.slice(0, 10)}...{route.address.slice(-6)})
-                </option>
-              ))}
-            </select>
-            {loadingRoute && <div className="text-xs text-gray-400 mt-1">Loading payment methods...</div>}
-          </div>
-        )}
+        {/* Payment Method */}
+        <div className="mb-4">
+          <label className="text-xs text-gray-500 mb-1 block">Payment Method</label>
+          <select
+            value={data.protocol || ''}
+            onChange={e => onChange({ ...data, protocol: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="">Select Method</option>
+            {PROTOCOLS.map((p) => (
+              <option key={p} value={p}>{p} ({data.network})</option>
+            ))}
+          </select>
+        </div>
 
         <div className="border-t border-gray-300 my-4 opacity-70" />
 

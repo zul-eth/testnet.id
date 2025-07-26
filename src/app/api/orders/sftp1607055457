@@ -36,72 +36,78 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.POST = exports.GET = void 0;
+exports.POST = void 0;
 var server_1 = require("next/server");
 var prisma_1 = require("@/lib/prisma");
-// GET /api/pairs?network=TESTNET|MAINNET
-function GET(req) {
-    return __awaiter(this, void 0, void 0, function () {
-        var network, pairs;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    network = req.nextUrl.searchParams.get('network');
-                    if (!network || (network !== 'TESTNET' && network !== 'MAINNET')) {
-                        return [2 /*return*/, server_1.NextResponse.json({ error: 'Invalid or missing network' }, { status: 400 })];
-                    }
-                    return [4 /*yield*/, prisma_1.prisma.pair.findMany({
-                            where: { network: network },
-                            include: {
-                                baseCoin: true,
-                                quoteCoin: true,
-                            },
-                            orderBy: { createdAt: 'desc' },
-                        })];
-                case 1:
-                    pairs = _a.sent();
-                    return [2 /*return*/, server_1.NextResponse.json(pairs)];
-            }
-        });
-    });
-}
-exports.GET = GET;
-// POST /api/pairs
+var uuid_1 = require("uuid");
+var date_fns_1 = require("date-fns");
+var hdwallet_1 = require("@/lib/hdwallet");
 function POST(req) {
+    var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var data, baseCoinId, quoteCoinId, network, priceBase, priceQuote, pair, err_1;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var data, pairId, amount, addressDestination, network, protocol, orderHash, expiresAt, latestOrder, nextIndex, paymentAddress, order, err_1;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
-                    _a.trys.push([0, 3, , 4]);
+                    _b.trys.push([0, 4, , 5]);
                     return [4 /*yield*/, req.json()];
                 case 1:
-                    data = _a.sent();
-                    baseCoinId = data.baseCoinId, quoteCoinId = data.quoteCoinId, network = data.network, priceBase = data.priceBase, priceQuote = data.priceQuote;
-                    if (!baseCoinId || !quoteCoinId || !network || !priceBase || !priceQuote) {
+                    data = _b.sent();
+                    pairId = data.pairId, amount = data.amount, addressDestination = data.addressDestination, network = data.network, protocol = data.protocol;
+                    if (!pairId || !amount || !addressDestination || !network || !protocol) {
                         return [2 /*return*/, server_1.NextResponse.json({ error: 'Missing required fields' }, { status: 400 })];
                     }
-                    return [4 /*yield*/, prisma_1.prisma.pair.create({
-                            data: {
-                                baseCoinId: baseCoinId,
-                                quoteCoinId: quoteCoinId,
+                    orderHash = (0, uuid_1.v4)();
+                    expiresAt = (0, date_fns_1.addMinutes)(new Date(), 15);
+                    return [4 /*yield*/, prisma_1.prisma.order.findFirst({
+                            where: {
                                 network: network,
-                                priceBase: parseFloat(priceBase),
-                                priceQuote: parseFloat(priceQuote),
+                                hdIndex: {
+                                    not: null,
+                                },
                             },
-                            include: {
-                                baseCoin: true,
-                                quoteCoin: true,
+                            orderBy: {
+                                hdIndex: 'desc',
+                            },
+                            select: {
+                                hdIndex: true,
                             },
                         })];
                 case 2:
-                    pair = _a.sent();
-                    return [2 /*return*/, server_1.NextResponse.json(pair)];
+                    latestOrder = _b.sent();
+                    nextIndex = ((_a = latestOrder === null || latestOrder === void 0 ? void 0 : latestOrder.hdIndex) !== null && _a !== void 0 ? _a : -1) + 1;
+                    paymentAddress = (0, hdwallet_1.deriveAddress)(nextIndex, protocol);
+                    return [4 /*yield*/, prisma_1.prisma.order.create({
+                            data: {
+                                pairId: pairId,
+                                amount: parseFloat(amount),
+                                addressDestination: addressDestination,
+                                network: network,
+                                orderHash: orderHash,
+                                expiresAt: expiresAt,
+                                paymentAddress: paymentAddress,
+                                hdIndex: nextIndex,
+                                protocol: protocol,
+                            },
+                        })];
                 case 3:
-                    err_1 = _a.sent();
-                    console.error('GAGAL POST PAIR:', err_1);
-                    return [2 /*return*/, server_1.NextResponse.json({ error: 'Internal Server Error', detail: err_1.message }, { status: 500 })];
-                case 4: return [2 /*return*/];
+                    order = _b.sent();
+                    return [2 /*return*/, server_1.NextResponse.json({
+                            orderId: order.id,
+                            orderHash: order.orderHash,
+                            paymentAddress: order.paymentAddress,
+                            hdIndex: order.hdIndex,
+                            protocol: order.protocol,
+                        })];
+                case 4:
+                    err_1 = _b.sent();
+                    console.error('GAGAL BUAT ORDER:', err_1);
+                    return [2 /*return*/, server_1.NextResponse.json({
+                            error: 'Internal Server Error',
+                            detail: err_1.message,
+                            stack: err_1.stack,
+                        }, { status: 500 })];
+                case 5: return [2 /*return*/];
             }
         });
     });

@@ -4,51 +4,36 @@ import { v4 as uuidv4 } from 'uuid'
 import { addMinutes } from 'date-fns'
 import { deriveAddress } from '@/lib/hdwallet'
 
-// GET all orders (opsional - bisa dipakai untuk admin dashboard)
-export async function GET() {
-  const orders = await prisma.order.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: {
-      pair: {
-        include: {
-          baseCoin: true,
-          quoteCoin: true,
-        },
-      },
-      paymentRoute: {
-        include: {
-          coin: true,
-        },
-      },
-    },
-  })
-
-  return NextResponse.json(orders)
-}
-
-// POST /api/orders
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json()
-    const { pairId, amount, addressDestination, network, paymentRouteId } = data
+    const { pairId, amount, addressDestination, network, protocol } = data
 
-    if (!pairId || !amount || !addressDestination || !network || !paymentRouteId) {
+    if (!pairId || !amount || !addressDestination || !network || !protocol) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const orderHash = uuidv4()
     const expiresAt = addMinutes(new Date(), 15)
 
-    const hdIndex = (await prisma.order.count()) + 1
-    const paymentAddress = deriveAddress(hdIndex)
-
-    const route = await prisma.paymentRoute.findUnique({
-      where: { id: paymentRouteId },
+    // Ambil hdIndex terakhir untuk network tersebut
+    const latestOrder = await prisma.order.findFirst({
+      where: {
+        network,
+        hdIndex: {
+          not: null,
+        },
+      },
+      orderBy: {
+        hdIndex: 'desc',
+      },
+      select: {
+        hdIndex: true,
+      },
     })
 
-    if (!route) {
-      return NextResponse.json({ error: 'Invalid payment route' }, { status: 400 })
-    }
+    const nextIndex = (latestOrder?.hdIndex ?? -1) + 1
+    const paymentAddress = deriveAddress(nextIndex, protocol)
 
     const order = await prisma.order.create({
       data: {
@@ -58,28 +43,25 @@ export async function POST(req: NextRequest) {
         network,
         orderHash,
         expiresAt,
-        paymentRouteId,
         paymentAddress,
-        hdIndex,
-      },
-      include: {
-        pair: {
-          include: {
-            baseCoin: true,
-            quoteCoin: true,
-          },
-        },
-        paymentRoute: {
-          include: {
-            coin: true,
-          },
-        },
+        hdIndex: nextIndex,
+        protocol,
       },
     })
 
-    return NextResponse.json(order)
+    return NextResponse.json({
+      orderId: order.id,
+      orderHash: order.orderHash,
+      paymentAddress: order.paymentAddress,
+      hdIndex: order.hdIndex,
+      protocol: order.protocol,
+    })
   } catch (err: any) {
     console.error('GAGAL BUAT ORDER:', err)
-    return NextResponse.json({ error: 'Internal Server Error', detail: err.message }, { status: 500 })
+    return NextResponse.json({
+      error: 'Internal Server Error',
+      detail: err.message,
+      stack: err.stack,
+    }, { status: 500 })
   }
 }

@@ -11,7 +11,6 @@ interface FormState {
   address: string
   network: 'TESTNET' | 'MAINNET'
   pairId?: string
-  paymentRouteId?: string
   paymentAddress?: string // Tambahkan
   protocol?: string       // Tambahkan
   orderId?: string
@@ -39,11 +38,9 @@ export default function Step3_TransactionStatus({ data, onBack, onCancel }: Prop
         .then(order => {
           if (order.paymentAddress) {
             setPaymentAddress(order.paymentAddress)
-          } else if (order.paymentRoute) {
-            setPaymentAddress(order.paymentRoute.address)
           }
-          if (order.paymentRoute) {
-            setProtocol(order.paymentRoute.protocol)
+          if (order.protocol) {
+            setProtocol(order.protocol)
           }
         })
     }
@@ -191,12 +188,32 @@ export default function Step3_TransactionStatus({ data, onBack, onCancel }: Prop
             <div className="animate-pulse w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
             <span>Waiting for payment...</span>
           </div>
-          <p className="text-xs text-gray-500">
+          
+          {paymentAddress && (
+          <div className="mt-4 p-4 rounded-lg border bg-white shadow-sm text-center">
+            <h2 className="text-sm text-gray-500">Send Payment To:</h2>
+            <div className="font-mono text-md text-blue-600 break-all mt-1">
+              {paymentAddress}
+            </div>
+            <button
+            className="mt-2 text-xs text-gray-400 hover:text-gray-600 flex items-center justify-center gap-1 mx-auto"
+            onClick={() => {
+            navigator.clipboard.writeText(paymentAddress)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 1000)
+            }}
+            >
+              <Copy size={14} />
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+              </div>
+              )}
+          <p className="text-xs text-gray-500 mt-4">
             Order link: 
             <a 
-              href={`/order?hash=${data.orderHash}`} 
-              className="text-blue-600 ml-1 underline"
-              target="_blank"
+            href={`/order?hash=${data.orderHash}`} 
+            className="text-blue-600 ml-1 underline"
+            target="_blank"
             >
               View order status
             </a>

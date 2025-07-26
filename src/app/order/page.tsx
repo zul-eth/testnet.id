@@ -13,7 +13,6 @@ interface FormState {
   address: string
   network: 'TESTNET' | 'MAINNET'
   pairId?: string
-  paymentRouteId?: string
   paymentAddress?: string
   protocol?: string
   orderId?: string
@@ -35,9 +34,35 @@ export default function OrderPage() {
   const [form, setForm] = useState<FormState>(initialForm)
   const [step, setStep] = useState<number>(1)
 
-  const handleNext = () => {
-    setStep(s => s + 1)
+  const handleNext = async () => {
+  // Saat step 2: generate payment address dari HD wallet
+  if (step === 2 && !form.paymentAddress && form.orderId) {
+    try {
+      const res = await fetch('/api/payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: form.orderId,
+          protocol: form.protocol,
+          coinId: form.pairId,
+          network: form.network,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (data?.paymentAddress) {
+        setForm(prev => ({ ...prev, paymentAddress: data.paymentAddress }))
+      }
+    } catch (err) {
+      console.error('Failed to get payment address:', err)
+    }
   }
+
+  // Tetap lanjut ke step berikutnya
+  setStep(s => s + 1)
+}
+
 
   const handleBack = () => {
     setStep(s => s - 1)

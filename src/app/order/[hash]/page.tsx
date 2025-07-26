@@ -10,11 +10,6 @@ interface Coin {
   iconUrl: string
 }
 
-interface PaymentRoute {
-  protocol: string
-  address: string
-  coin: Coin
-}
 
 interface Pair {
   baseCoin: Coin
@@ -33,7 +28,8 @@ interface Order {
   status: 'PENDING' | 'CONFIRMED' | 'EXPIRED' | 'FAILED'
   expiresAt: string
   createdAt: string
-  paymentRoute: PaymentRoute
+  paymentAddress: string
+  protocol: string
   history?: {
     txHash: string
     confirmedAt: string
@@ -184,25 +180,25 @@ export default function OrderStatusPage() {
         </div>
 
         {/* Payment Instruction Card */}
-        {order.paymentRoute && (
+        {order.paymentAddress && (
           <div className="bg-white rounded-lg shadow-sm border border-blue-200 p-6 mb-4">
             <h2 className="text-lg font-semibold mb-4 text-blue-700">Payment Instruction</h2>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-500">Pay To</span>
-                <span className="font-mono text-xs break-all">{order.paymentAddress || order.paymentRoute.address}</span>
+                <span className="font-mono text-xs break-all">{order.paymentAddress}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Protocol</span>
-                <span className="font-medium">{order.paymentRoute.protocol}</span>
+                <span className="font-medium">{order.protocol}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Payment Coin</span>
-                <span className="font-medium">{order.paymentRoute.coin.symbol}</span>
+                <span className="font-medium">{baseCoin.symbol}</span>
               </div>
             </div>
             <div className="mt-4 text-xs text-blue-700 bg-blue-50 p-2 rounded">
-              Kirim <b>{order.amount} {order.paymentRoute.coin.symbol}</b> ke alamat di atas menggunakan <b>{order.paymentRoute.protocol}</b>. Order akan terkonfirmasi otomatis setelah pembayaran diterima.
+              Kirim <b>{order.amount} {baseCoin.symbol}</b> ke alamat di atas menggunakan <b>{order.protocol}</b>. Order akan terkonfirmasi otomatis setelah pembayaran diterima.
             </div>
           </div>
         )}

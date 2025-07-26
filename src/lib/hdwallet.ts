@@ -1,24 +1,21 @@
-import { HDNodeWallet, Mnemonic, Wallet } from 'ethers'
+import { HDNodeWallet } from "ethers"
+import { mnemonicToSeedSync } from "bip39"
+import { derivePath as ed25519DerivePath } from "ed25519-hd-key"
+import { Keypair } from "@solana/web3.js"
 
-// Derive address from mnemonic or xpub
-// Use HD_WALLET_MNEMONIC or HD_WALLET_XPRV/XPUB
-const mnemonic = process.env.HD_WALLET_MNEMONIC
-const xprv = process.env.HD_WALLET_XPRV
-const xpub = process.env.HD_WALLET_XPUB
+const mnemonic = process.env.HD_WALLET_MNEMONIC || ''
 
-let root: HDNodeWallet
+export function deriveAddress(index: number, protocol: string): string {
+  if (!mnemonic) throw new Error('HD_WALLET_MNEMONIC not set')
 
-if (xprv) {
-  root = HDNodeWallet.fromPhrase(xprv)
-} else if (mnemonic) {
-  root = HDNodeWallet.fromPhrase(mnemonic)
-} else if (xpub) {
-  root = HDNodeWallet.fromExtendedKey(xpub)
-} else {
-  throw new Error('HD wallet key not configured')
-}
+  if (protocol.toUpperCase() === 'SOLANA') {
+    const seed = mnemonicToSeedSync(mnemonic)
+    const { key } = ed25519DerivePath(`m/44'/501'/0'/0'/${index}`, seed)
+    const kp = Keypair.fromSeed(key)
+    return kp.publicKey.toBase58()
+  }
 
-export function deriveAddress(index: number): string {
-  const child = root.derivePath(`0/${index}`)
-  return child.address
+  const path = `m/44'/60'/0'/0/${index}`
+  const wallet = HDNodeWallet.fromPhrase(mnemonic, undefined, path)
+  return wallet.address
 }

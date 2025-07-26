@@ -19,19 +19,6 @@ enum OrderStatus {
   FAILED
 }
 
-model PaymentRoute {
-  id        String   @id @default(uuid())
-  coin      Coin     @relation("CoinToPaymentRoute", fields: [coinId], references: [id])
-  coinId    String
-  network   Network
-  protocol  String
-  address   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relasi ke Order
-  orders Order[] @relation("PaymentRouteToOrder")
-}
 
 model Coin {
   id        String   @id @default(uuid())
@@ -45,7 +32,6 @@ model Coin {
   // Relasi
   basePairs     Pair[]         @relation("BaseCoin")
   quotePairs    Pair[]         @relation("QuoteCoin")
-  paymentRoutes PaymentRoute[] @relation("CoinToPaymentRoute")
 }
 
 model Pair {
@@ -76,6 +62,7 @@ model Order {
   paymentAddress     String?
   /// HD wallet index used to derive paymentAddress
   hdIndex            Int?
+  protocol           String
   status             OrderStatus @default(PENDING)
   expiresAt          DateTime
   createdAt          DateTime    @default(now())
@@ -83,8 +70,6 @@ model Order {
 
   // Relasi
   history        OrderHistory?
-  paymentRoute   PaymentRoute  @relation("PaymentRouteToOrder", fields: [paymentRouteId], references: [id])
-  paymentRouteId String
 }
 
 model OrderHistory {

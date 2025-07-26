@@ -7,7 +7,6 @@ const provider = new JsonRpcProvider(process.env.RPC_URL || '')
 export async function POST() {
   const pending = await prisma.order.findMany({
     where: { status: 'PENDING', paymentAddress: { not: null } },
-    include: { paymentRoute: true },
   })
 
   for (const ord of pending) {

@@ -9,7 +9,6 @@ export async function GET(_req: NextRequest, { params }: { params: { hash: strin
       where: { orderHash: params.hash },
       include: {
         pair: { include: { baseCoin: true, quoteCoin: true } },
-        paymentRoute: { include: { coin: true } },
       },
     })
 

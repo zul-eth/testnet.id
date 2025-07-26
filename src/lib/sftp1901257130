@@ -1,0 +1,22 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.deriveAddress = void 0;
+var ethers_1 = require("ethers");
+var bip39_1 = require("bip39");
+var ed25519_hd_key_1 = require("ed25519-hd-key");
+var web3_js_1 = require("@solana/web3.js");
+var mnemonic = process.env.HD_WALLET_MNEMONIC || '';
+function deriveAddress(index, protocol) {
+    if (!mnemonic)
+        throw new Error('HD_WALLET_MNEMONIC not set');
+    if (protocol.toUpperCase() === 'SOLANA') {
+        var seed = (0, bip39_1.mnemonicToSeedSync)(mnemonic);
+        var key = (0, ed25519_hd_key_1.derivePath)("m/44'/501'/0'/0'/".concat(index), seed).key;
+        var kp = web3_js_1.Keypair.fromSeed(key);
+        return kp.publicKey.toBase58();
+    }
+    var path = "m/44'/60'/0'/0/".concat(index);
+    var wallet = ethers_1.HDNodeWallet.fromPhrase(mnemonic, undefined, path);
+    return wallet.address;
+}
+exports.deriveAddress = deriveAddress;

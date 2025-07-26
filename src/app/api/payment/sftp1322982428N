@@ -36,39 +36,75 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PATCH = void 0;
+exports.POST = void 0;
 var server_1 = require("next/server");
 var prisma_1 = require("@/lib/prisma");
-var client_1 = require("@prisma/client");
-function PATCH(req, _a) {
-    var params = _a.params;
+var hdwallet_1 = require("@/lib/hdwallet");
+function POST(req) {
+    var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var body, status, order, err_1;
+        var body, orderId, protocol, coinId, network, order, latestOrderWithIndex, nextIndex, paymentAddress, updated, error_1;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    _b.trys.push([0, 3, , 4]);
+                    _b.trys.push([0, 5, , 6]);
                     return [4 /*yield*/, req.json()];
                 case 1:
                     body = _b.sent();
-                    status = body.status;
-                    if (!status || !Object.values(client_1.OrderStatus).includes(status)) {
-                        return [2 /*return*/, server_1.NextResponse.json({ error: "Invalid status value" }, { status: 400 })];
+                    orderId = body.orderId, protocol = body.protocol, coinId = body.coinId, network = body.network;
+                    if (!orderId || !protocol || !coinId || !network) {
+                        return [2 /*return*/, server_1.NextResponse.json({ error: 'Missing required fields' }, { status: 400 })];
                     }
-                    return [4 /*yield*/, prisma_1.prisma.order.update({
-                            where: { orderHash: params.hash },
-                            data: { status: status }
+                    return [4 /*yield*/, prisma_1.prisma.order.findUnique({
+                            where: { id: orderId },
                         })];
                 case 2:
                     order = _b.sent();
-                    return [2 /*return*/, server_1.NextResponse.json(order)];
+                    if (!order) {
+                        return [2 /*return*/, server_1.NextResponse.json({ error: 'Order not found' }, { status: 404 })];
+                    }
+                    if (order.paymentAddress) {
+                        return [2 /*return*/, server_1.NextResponse.json({ error: 'Order already has a payment address' }, { status: 400 })];
+                    }
+                    return [4 /*yield*/, prisma_1.prisma.order.findFirst({
+                            where: {
+                                network: network,
+                                paymentAddressIndex: {
+                                    not: null,
+                                },
+                            },
+                            orderBy: {
+                                paymentAddressIndex: 'desc',
+                            },
+                            select: {
+                                paymentAddressIndex: true,
+                            },
+                        })];
                 case 3:
-                    err_1 = _b.sent();
-                    console.error("GAGAL UPDATE ORDER STATUS:", err_1);
-                    return [2 /*return*/, server_1.NextResponse.json({ error: "Internal Server Error", detail: err_1.message }, { status: 500 })];
-                case 4: return [2 /*return*/];
+                    latestOrderWithIndex = _b.sent();
+                    nextIndex = ((_a = latestOrderWithIndex === null || latestOrderWithIndex === void 0 ? void 0 : latestOrderWithIndex.paymentAddressIndex) !== null && _a !== void 0 ? _a : -1) + 1;
+                    paymentAddress = (0, hdwallet_1.deriveAddress)(nextIndex, protocol);
+                    return [4 /*yield*/, prisma_1.prisma.order.update({
+                            where: { id: orderId },
+                            data: {
+                                paymentAddress: paymentAddress,
+                                paymentAddressIndex: nextIndex,
+                            },
+                        })];
+                case 4:
+                    updated = _b.sent();
+                    return [2 /*return*/, server_1.NextResponse.json({
+                            success: true,
+                            paymentAddress: paymentAddress,
+                            paymentAddressIndex: nextIndex,
+                        })];
+                case 5:
+                    error_1 = _b.sent();
+                    console.error(error_1);
+                    return [2 /*return*/, server_1.NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })];
+                case 6: return [2 /*return*/];
             }
         });
     });
 }
-exports.PATCH = PATCH;
+exports.POST = POST;

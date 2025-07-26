@@ -1,48 +1,66 @@
-// src/app/api/payment/route.ts
-
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { deriveAddress } from '@/lib/hdwallet'
 
-// GET /api/payment?network=TESTNET|MAINNET
-export async function GET(req: NextRequest) {
-  const network = req.nextUrl.searchParams.get('network')
-
-  if (network !== 'TESTNET' && network !== 'MAINNET') {
-    return NextResponse.json({ error: 'Invalid network' }, { status: 400 })
-  }
-
-  const routes = await prisma.paymentRoute.findMany({
-    where: { network },
-    include: { coin: true },
-    orderBy: { createdAt: 'desc' },
-  })
-
-  return NextResponse.json(routes)
-}
-
-// POST /api/payment
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { coinId, protocol, address, network } = body
+    const { orderId, protocol, coinId, network } = body
 
-    if (!coinId || !protocol || !address || (network !== 'MAINNET' && network !== 'TESTNET')) {
-      return NextResponse.json({ error: 'Missing or invalid fields' }, { status: 400 })
+    if (!orderId || !protocol || !coinId || !network) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const newRoute = await prisma.paymentRoute.create({
-      data: {
-        coinId,
-        protocol,
-        address,
-        network,
-      },
-      include: { coin: true },
+    // Cari order
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
     })
 
-    return NextResponse.json(newRoute)
-  } catch (err: any) {
-    console.error('GAGAL BUAT PAYMENT ROUTE:', err)
-    return NextResponse.json({ error: 'Internal Server Error', detail: err.message }, { status: 500 })
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+
+    if (order.paymentAddress) {
+      return NextResponse.json({ error: 'Order already has a payment address' }, { status: 400 })
+    }
+
+    // Cari index terakhir yang digunakan
+    const latestOrderWithIndex = await prisma.order.findFirst({
+      where: {
+        network,
+        paymentAddressIndex: {
+          not: null,
+        },
+      },
+      orderBy: {
+        paymentAddressIndex: 'desc',
+      },
+      select: {
+        paymentAddressIndex: true,
+      },
+    })
+
+    const nextIndex = (latestOrderWithIndex?.paymentAddressIndex ?? -1) + 1
+
+    // Generate address dari HD wallet
+    const paymentAddress = deriveAddress(nextIndex, protocol)
+
+    // Simpan ke order
+    const updated = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentAddress,
+        paymentAddressIndex: nextIndex,
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      paymentAddress,
+      paymentAddressIndex: nextIndex,
+    })
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
