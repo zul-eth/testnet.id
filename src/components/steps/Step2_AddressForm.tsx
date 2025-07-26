@@ -62,22 +62,10 @@ export default function Step2_AddressForm({
             const order = await res.json();
             onChange({
                 ...data,
-<<<<<<< ours
-<<<<<<< ours
                 orderHash: order.orderHash,
                 orderId: order.id,
                 paymentAddress: order.paymentAddress,
                 protocol: order.paymentRoute.protocol,
-=======
-                orderId: order.id,
-                orderHash: order.orderHash
->>>>>>> theirs
-=======
-                orderHash: order.orderHash,
-                orderId: order.id,
-                paymentAddress: order.paymentRoute?.address,
-                protocol: order.paymentRoute?.protocol,
->>>>>>> theirs
             });
             onNext();
         } catch (err) {
