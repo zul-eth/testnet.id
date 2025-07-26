@@ -72,6 +72,10 @@ model Order {
   pairId             String
   amount             Float
   addressDestination String
+  /// Unique address derived from HD wallet for payment
+  paymentAddress     String?
+  /// HD wallet index used to derive paymentAddress
+  hdIndex            Int?
   status             OrderStatus @default(PENDING)
   expiresAt          DateTime
   createdAt          DateTime    @default(now())

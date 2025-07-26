@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { v4 as uuidv4 } from 'uuid'
 import { addMinutes } from 'date-fns'
+import { deriveAddress } from '@/lib/hdwallet'
 
 // GET all orders (opsional - bisa dipakai untuk admin dashboard)
 export async function GET() {
@@ -38,6 +39,9 @@ export async function POST(req: NextRequest) {
     const orderHash = uuidv4()
     const expiresAt = addMinutes(new Date(), 15)
 
+    const hdIndex = (await prisma.order.count()) + 1
+    const paymentAddress = deriveAddress(hdIndex)
+
     const route = await prisma.paymentRoute.findUnique({
       where: { id: paymentRouteId },
     })
@@ -55,7 +59,8 @@ export async function POST(req: NextRequest) {
         orderHash,
         expiresAt,
         paymentRouteId,
-        payment: route.address, // ambil dari PaymentRoute
+        paymentAddress,
+        hdIndex,
       },
       include: {
         pair: {

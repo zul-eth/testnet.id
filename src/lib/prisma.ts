@@ -11,4 +11,6 @@ export const prisma =
     log: ['query', 'error', 'warn'], // Opsional, bisa dihilangkan kalau ingin log minimal
   })
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma
+}

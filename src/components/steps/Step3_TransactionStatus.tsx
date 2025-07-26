@@ -37,8 +37,12 @@ export default function Step3_TransactionStatus({ data, onBack, onCancel }: Prop
       fetch(`/api/orders/${data.orderHash}`)
         .then(res => res.json())
         .then(order => {
-          if (order.paymentRoute) {
+          if (order.paymentAddress) {
+            setPaymentAddress(order.paymentAddress)
+          } else if (order.paymentRoute) {
             setPaymentAddress(order.paymentRoute.address)
+          }
+          if (order.paymentRoute) {
             setProtocol(order.paymentRoute.protocol)
           }
         })

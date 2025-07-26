@@ -190,7 +190,7 @@ export default function OrderStatusPage() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-500">Pay To</span>
-                <span className="font-mono text-xs break-all">{order.paymentRoute.address}</span>
+                <span className="font-mono text-xs break-all">{order.paymentAddress || order.paymentRoute.address}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Protocol</span>
